@@ -46,3 +46,8 @@ backend_run.log
 # ============ 系统 ============
 .DS_Store
 Thumbs.db
+
+# ============ 其他本地探针产物 ============
+pw_min.py
+run_subset.py
+*_snap.txt
