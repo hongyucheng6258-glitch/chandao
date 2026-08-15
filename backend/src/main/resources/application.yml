@@ -1,0 +1,53 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: pms-backend
+  datasource:
+    url: jdbc:mysql://localhost:3306/pms?useUnicode=true&characterEncoding=utf8&connectionCollation=utf8mb4_general_ci&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 666666
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 5000
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+  main:
+    allow-circular-references: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: false
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# 自定义配置
+pms:
+  # 附件上传根目录(相对后端运行目录, 启动时自动创建)
+  upload-dir: ./uploads
+  jwt:
+    # 毕设演示用密钥, 生产环境应放环境变量
+    secret: pms-zentao-like-secret-key-for-graduation-project-2026-very-long
+    # token 有效期(毫秒): 12小时
+    expire: 43200000
+
+logging:
+  level:
+    com.pms: info

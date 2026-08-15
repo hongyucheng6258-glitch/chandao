@@ -1,0 +1,48 @@
+# ============ 依赖 ============
+node_modules/
+frontend/node_modules/
+
+# ============ 构建产物 ============
+target/
+target_new/
+backend/target/
+backend/target_new/
+dist/
+frontend/dist/
+build/
+
+# ============ Python ============
+__pycache__/
+*.pyc
+
+# ============ 日志 / 临时输出 ============
+*.log
+*.out
+*.err
+
+# ============ WorkBuddy 记忆与产物 ============
+.workbuddy/
+
+# ============ 本地探针 / 调试脚本（非项目源码） ============
+debug*.py
+debug*.out
+debug*.err
+explore*.py
+explore*.out
+probe*.py
+probe*.txt
+probe*.out
+chrome_probe.py
+chrome_probe_out.txt
+browser_test.py
+browser_test*.out
+logout_check.py
+logout_check.out
+att_test.mjs
+att_demo.txt
+board_snap.txt
+backend_run.log
+
+# ============ 系统 ============
+.DS_Store
+Thumbs.db
