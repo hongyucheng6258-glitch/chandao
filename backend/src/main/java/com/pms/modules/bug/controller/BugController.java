@@ -97,6 +97,9 @@ public class BugController {
     @PreAuthorize("hasAuthority('bug:handle')")
     @LogOperation(objectType = "bug", action = "Bug状态流转", objectId = "#id")
     public Result<Void> changeStatus(@PathVariable Long id, @RequestBody FlowBody body) {
+        if (body == null || body.getAction() == null || body.getAction().isBlank()) {
+            throw new BizException("操作类型(action)不能为空");
+        }
         Bug bug = bugMapper.selectById(id);
         if (bug == null) {
             throw new BizException("Bug不存在");

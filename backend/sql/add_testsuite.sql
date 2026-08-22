@@ -46,3 +46,7 @@ CREATE TABLE test_run (
 -- 菜单：测试单（挂在质量中心 id=9 下；与 Bug/测试用例 同级显示）
 INSERT INTO sys_permission (parent_id, perm_name, perm_type, perm_key, path, icon, sort, deleted)
 VALUES (9, '测试单', 2, 'testsuite:list', '/qa/suite', 'Files', 3, 0);
+
+-- 测试单权限授予测试工程师(QA)，admin 已拥有全部权限无需处理
+INSERT INTO sys_role_permission (role_id, perm_id)
+SELECT DISTINCT 5, id FROM sys_permission WHERE perm_key = 'testsuite:list' AND deleted = 0;

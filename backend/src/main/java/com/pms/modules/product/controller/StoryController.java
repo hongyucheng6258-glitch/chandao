@@ -101,6 +101,9 @@ public class StoryController {
     @PreAuthorize("hasAuthority('story:flow')")
     @LogOperation(objectType = "story", action = "需求状态流转", objectId = "#id")
     public Result<Void> changeStatus(@PathVariable Long id, @RequestBody FlowBody body) {
+        if (body == null || body.getAction() == null || body.getAction().isBlank()) {
+            throw new BizException("操作类型(action)不能为空");
+        }
         Story story = storyMapper.selectById(id);
         if (story == null) {
             throw new BizException("需求不存在");

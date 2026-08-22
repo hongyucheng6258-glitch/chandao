@@ -341,6 +341,30 @@ INSERT INTO sys_permission (id, parent_id, perm_name, perm_type, perm_key, path,
 INSERT INTO sys_role_permission (role_id, perm_id)
 SELECT 1, id FROM sys_permission;
 
+-- 产品经理(PO)权限: 首页 + 产品管理(产品列表/需求管理/发布管理 + 按钮) + 统计报表
+INSERT INTO sys_role_permission (role_id, perm_id) VALUES
+ (2, 1),  (2, 2),  (2, 3),  (2, 4),  (2, 5),
+ (2, 12),
+ (2, 19), (2, 20), (2, 21);
+
+-- 项目经理(PM)权限: 首页 + 项目管理(项目列表/迭代看板 + 按钮) + 统计报表
+INSERT INTO sys_role_permission (role_id, perm_id) VALUES
+ (3, 1),  (3, 6),  (3, 7),  (3, 8),
+ (3, 12),
+ (3, 22), (3, 23);
+
+-- 开发工程师(DEV)权限: 首页 + 项目管理(迭代看板 + 任务指派) + 质量中心(Bug管理 + 提Bug/Bug处理) + 统计报表
+INSERT INTO sys_role_permission (role_id, perm_id) VALUES
+ (4, 1),  (4, 6),  (4, 8),  (4, 23),
+ (4, 9),  (4, 10), (4, 24), (4, 25),
+ (4, 12);
+
+-- 测试工程师(QA)权限: 首页 + 质量中心(Bug管理/测试用例/测试单 + 提Bug/Bug处理) + 统计报表
+INSERT INTO sys_role_permission (role_id, perm_id) VALUES
+ (5, 1),  (5, 9),  (5, 10), (5, 11),
+ (5, 12),
+ (5, 24), (5, 25);
+
 -- 默认部门
 INSERT INTO sys_dept (id, parent_id, dept_name, sort) VALUES
  (1, 0, '研发部', 1), (2, 0, '产品部', 2), (3, 0, '测试部', 3);

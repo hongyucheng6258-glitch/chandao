@@ -126,6 +126,10 @@ public class TaskController {
     @PutMapping("/{id}/status")
     @LogOperation(objectType = "task", action = "任务状态流转", objectId = "#id")
     public Result<Void> changeStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String action = body == null ? null : body.get("action");
+        if (action == null || action.isBlank()) {
+            throw new BizException("操作类型(action)不能为空");
+        }
         Task task = taskMapper.selectById(id);
         if (task == null) {
             throw new BizException("任务不存在");
