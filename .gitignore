@@ -42,6 +42,19 @@ att_test.mjs
 att_demo.txt
 board_snap.txt
 backend_run.log
+# 后端调试探针输出
+backend/acl.txt
+backend/clearchk.txt
+backend/deftest.txt
+backend/wtest*.txt
+
+# ============ 本地敏感配置 ============
+.env
+.env.*
+!.env.example
+application-local.yml
+*.secret
+*.secrets
 
 # ============ 系统 ============
 .DS_Store

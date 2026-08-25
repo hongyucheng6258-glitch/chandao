@@ -7,6 +7,9 @@ const request = axios.create({
   timeout: 15000
 })
 
+// 防止多个401请求重复跳转和提示
+let isRedirecting = false
+
 request.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) {
@@ -27,8 +30,13 @@ request.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token')
-      ElMessage.error(error.response.data?.message || '登录已过期，请重新登录')
-      router.push('/login')
+      if (!isRedirecting) {
+        isRedirecting = true
+        ElMessage.error(error.response.data?.message || '登录已过期，请重新登录')
+        router.push('/login').finally(() => {
+          setTimeout(() => { isRedirecting = false }, 500)
+        })
+      }
     } else {
       ElMessage.error(error.response?.data?.message || error.message || '网络异常')
     }

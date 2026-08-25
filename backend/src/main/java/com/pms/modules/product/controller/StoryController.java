@@ -7,6 +7,13 @@ import com.pms.common.exception.BizException;
 import com.pms.common.result.Result;
 import com.pms.modules.product.entity.Story;
 import com.pms.modules.product.mapper.StoryMapper;
+import com.pms.modules.project.entity.Project;
+import com.pms.modules.project.entity.Sprint;
+import com.pms.modules.project.entity.SprintStory;
+import com.pms.modules.project.mapper.ProjectMapper;
+import com.pms.modules.project.mapper.SprintMapper;
+import com.pms.modules.project.mapper.SprintStoryMapper;
+import com.pms.modules.project.mapper.SprintStoryMapper;
 import com.pms.modules.task.entity.Task;
 import com.pms.modules.task.mapper.TaskMapper;
 import lombok.Data;
@@ -28,6 +35,9 @@ public class StoryController {
 
     private final StoryMapper storyMapper;
     private final TaskMapper taskMapper;
+    private final SprintMapper sprintMapper;
+    private final SprintStoryMapper sprintStoryMapper;
+    private final ProjectMapper projectMapper;
 
     /** 状态机: draft -> active; active -> changed/closed; changed -> active/closed; closed -> active(重新打开) */
     private static final Map<String, Set<String>> TRANSITIONS = Map.of(
@@ -41,27 +51,85 @@ public class StoryController {
     public Result<Page<Story>> page(@RequestParam(defaultValue = "1") long pageNum,
                                     @RequestParam(defaultValue = "10") long pageSize,
                                     @RequestParam(required = false) Long productId,
+                                    @RequestParam(required = false) Long projectId,
+                                    @RequestParam(required = false) Long sprintId,
                                     @RequestParam(required = false) String status,
                                     @RequestParam(required = false) Integer priority,
                                     @RequestParam(required = false) Long assignedTo,
                                     @RequestParam(required = false) String keyword) {
+        // 按迭代/项目筛选
+        List<Long> filterStoryIds = null;
+        Long filterProductId = productId;
+        if (sprintId != null) {
+            // 指定迭代: 只显示已拉入该迭代的需求
+            filterStoryIds = sprintStoryMapper.selectList(
+                    new LambdaQueryWrapper<SprintStory>().eq(SprintStory::getSprintId, sprintId))
+                    .stream().map(SprintStory::getStoryId).toList();
+        } else if (projectId != null) {
+            // 指定项目(未指定迭代): 显示该项目关联产品的所有需求
+            Project project = projectMapper.selectById(projectId);
+            if (project != null && project.getProductId() != null) {
+                filterProductId = project.getProductId();
+            }
+        }
         LambdaQueryWrapper<Story> wrapper = new LambdaQueryWrapper<Story>()
-                .eq(productId != null, Story::getProductId, productId)
+                .eq(filterProductId != null, Story::getProductId, filterProductId)
                 .eq(status != null && !status.isBlank(), Story::getStatus, status)
                 .eq(priority != null, Story::getPriority, priority)
                 .eq(assignedTo != null, Story::getAssignedTo, assignedTo)
                 .like(keyword != null && !keyword.isBlank(), Story::getTitle, keyword)
+                .in(filterStoryIds != null, Story::getId, filterStoryIds)
                 .orderByAsc(Story::getPriority).orderByDesc(Story::getId);
-        return Result.ok(storyMapper.selectPage(new Page<>(pageNum, pageSize), wrapper));
+        Page<Story> page = storyMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
+        // 填充所属迭代名称
+        List<Story> records = page.getRecords();
+        if (records != null && !records.isEmpty()) {
+            List<Long> storyIds = records.stream().map(Story::getId).toList();
+            List<SprintStory> relations = sprintStoryMapper.selectList(
+                    new LambdaQueryWrapper<SprintStory>().in(SprintStory::getStoryId, storyIds));
+            if (!relations.isEmpty()) {
+                List<Long> sprintIds = relations.stream().map(SprintStory::getSprintId).distinct().toList();
+                Map<Long, String> sprintNameMap = sprintMapper.selectBatchIds(sprintIds).stream()
+                        .collect(java.util.stream.Collectors.toMap(Sprint::getId, Sprint::getName));
+                Map<Long, Long> storyToSprint = relations.stream()
+                        .collect(java.util.stream.Collectors.toMap(SprintStory::getStoryId, SprintStory::getSprintId, (a, b) -> a));
+                for (Story s : records) {
+                    Long sid = storyToSprint.get(s.getId());
+                    if (sid != null) {
+                        s.setSprintName(sprintNameMap.getOrDefault(sid, "-"));
+                    }
+                }
+            }
+        }
+        return Result.ok(page);
     }
 
     @GetMapping("/options")
     public Result<java.util.List<Story>> options(@RequestParam(required = false) Long productId) {
-        return Result.ok(storyMapper.selectList(new LambdaQueryWrapper<Story>()
+        List<Story> list = storyMapper.selectList(new LambdaQueryWrapper<Story>()
                 .eq(productId != null, Story::getProductId, productId)
                 .in(Story::getStatus, "active", "changed")
-                .select(Story::getId, Story::getTitle, Story::getProductId, Story::getStatus)
-                .orderByDesc(Story::getId)));
+                .orderByDesc(Story::getId));
+        // 填充所属迭代名称
+        if (!list.isEmpty()) {
+            List<Long> storyIds = list.stream().map(Story::getId).toList();
+            List<SprintStory> relations = sprintStoryMapper.selectList(
+                    new LambdaQueryWrapper<SprintStory>().in(SprintStory::getStoryId, storyIds));
+            if (!relations.isEmpty()) {
+                List<Long> sprintIds = relations.stream().map(SprintStory::getSprintId).distinct().toList();
+                Map<Long, String> sprintNameMap = sprintMapper.selectBatchIds(sprintIds).stream()
+                        .collect(java.util.stream.Collectors.toMap(Sprint::getId, Sprint::getName));
+                Map<Long, Long> storyToSprint = relations.stream()
+                        .collect(java.util.stream.Collectors.toMap(SprintStory::getStoryId, SprintStory::getSprintId, (a, b) -> a));
+                for (Story s : list) {
+                    Long sid = storyToSprint.get(s.getId());
+                    if (sid != null) {
+                        s.setSprintName(sprintNameMap.getOrDefault(sid, "-"));
+                    }
+                }
+            }
+        }
+        return Result.ok(list);
     }
 
     @GetMapping("/{id}")

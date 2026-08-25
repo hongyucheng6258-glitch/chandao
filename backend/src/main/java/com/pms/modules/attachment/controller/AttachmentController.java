@@ -7,6 +7,7 @@ import com.pms.common.utils.SecurityUtil;
 import com.pms.modules.attachment.entity.SysAttachment;
 import com.pms.modules.attachment.mapper.SysAttachmentMapper;
 import com.pms.modules.system.entity.SysUser;
+import com.pms.modules.system.service.SysConfigService;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -29,6 +31,7 @@ import java.util.UUID;
 public class AttachmentController {
 
     private final SysAttachmentMapper attachmentMapper;
+    private final SysConfigService configService;
 
     @Value("${pms.upload-dir:./uploads}")
     private String uploadDirConfig;
@@ -39,6 +42,19 @@ public class AttachmentController {
     public void init() throws IOException {
         uploadDir = Paths.get(uploadDirConfig).toAbsolutePath().normalize();
         Files.createDirectories(uploadDir);
+    }
+
+    /** 从系统配置读取允许的扩展名白名单(管理员可在系统配置页面修改, 实时生效) */
+    private Set<String> getAllowedExtensions() {
+        String config = configService.getValue("upload.allowed-ext");
+        if (config == null || config.isBlank()) {
+            return Set.of("doc", "docx", "pdf", "xls", "xlsx", "ppt", "pptx",
+                    "txt", "md", "csv", "png", "jpg", "jpeg", "gif", "webp", "bmp",
+                    "zip", "rar", "7z");
+        }
+        return java.util.Arrays.stream(config.split(","))
+                .map(String::trim).map(String::toLowerCase)
+                .filter(s -> !s.isEmpty()).collect(java.util.stream.Collectors.toSet());
     }
 
     /** 上传附件: 落盘 + 入库, 登录即可 */
@@ -60,6 +76,9 @@ public class AttachmentController {
         int dot = original.lastIndexOf('.');
         if (dot > 0 && dot < original.length() - 1) {
             ext = original.substring(dot + 1).toLowerCase();
+        }
+        if (ext.isEmpty() || !getAllowedExtensions().contains(ext)) {
+            throw new BizException("不支持的文件类型: " + (ext.isEmpty() ? "无扩展名" : ext));
         }
         String storedName = UUID.randomUUID().toString().replace("-", "") + (ext.isEmpty() ? "" : "." + ext);
         try {

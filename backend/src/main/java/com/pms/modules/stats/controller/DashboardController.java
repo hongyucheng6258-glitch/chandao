@@ -57,13 +57,13 @@ public class DashboardController {
                 .orderByAsc(Task::getDeadline).last("LIMIT 20")));
     }
 
-    /** 指派给我的待处理Bug */
+    /** 指派给我的待处理Bug(只显示激活状态, 已解决/已关闭的不再展示) */
     @GetMapping("/my-bugs")
     public Result<Object> myBugs() {
         Long userId = SecurityUtil.getUserId();
         return Result.ok(bugMapper.selectList(new LambdaQueryWrapper<Bug>()
                 .eq(Bug::getAssignedTo, userId)
-                .in(Bug::getStatus, "active", "resolved")
+                .eq(Bug::getStatus, "active")
                 .orderByAsc(Bug::getSeverity).last("LIMIT 20")));
     }
 }

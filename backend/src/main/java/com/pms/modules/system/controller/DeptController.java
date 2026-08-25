@@ -21,6 +21,7 @@ public class DeptController {
     private final SysDeptMapper deptMapper;
 
     @GetMapping("/tree")
+    @PreAuthorize("hasAuthority('system:dept:list')")
     public Result<List<SysDept>> tree() {
         List<SysDept> all = deptMapper.selectList(
                 new LambdaQueryWrapper<SysDept>().orderByAsc(SysDept::getSort));

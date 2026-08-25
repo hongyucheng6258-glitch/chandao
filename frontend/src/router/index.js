@@ -26,7 +26,8 @@ const routes = [
       { path: 'system/role', component: () => import('@/views/system/role.vue'), meta: { title: '角色管理' } },
       { path: 'system/perm', component: () => import('@/views/system/perm.vue'), meta: { title: '权限管理' } },
       { path: 'system/dept', component: () => import('@/views/system/dept.vue'), meta: { title: '部门管理' } },
-      { path: 'system/log', component: () => import('@/views/system/log.vue'), meta: { title: '操作日志' } }
+      { path: 'system/log', component: () => import('@/views/system/log.vue'), meta: { title: '操作日志' } },
+      { path: 'system/config', component: () => import('@/views/system/Config.vue'), meta: { title: '系统配置' } }
     ]
   }
 ]

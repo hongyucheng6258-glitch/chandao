@@ -4,18 +4,34 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.pms.common.exception.BizException;
 import com.pms.common.result.Result;
+import com.pms.common.utils.SecurityUtil;
+import com.pms.modules.attachment.entity.SysAttachment;
+import com.pms.modules.attachment.mapper.SysAttachmentMapper;
 import com.pms.modules.system.entity.SysUser;
 import com.pms.modules.system.entity.SysUserRole;
 import com.pms.modules.system.mapper.SysUserMapper;
 import com.pms.modules.system.mapper.SysUserRoleMapper;
+import com.pms.modules.system.service.SysConfigService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
@@ -25,6 +41,19 @@ public class UserController {
     private final SysUserMapper userMapper;
     private final SysUserRoleMapper userRoleMapper;
     private final PasswordEncoder passwordEncoder;
+    private final SysAttachmentMapper attachmentMapper;
+    private final SysConfigService configService;
+
+    @Value("${pms.upload-dir:./uploads}")
+    private String uploadDirConfig;
+
+    private Path uploadDir;
+
+    @PostConstruct
+    public void init() throws IOException {
+        uploadDir = Paths.get(uploadDirConfig).toAbsolutePath().normalize();
+        Files.createDirectories(uploadDir);
+    }
 
     @GetMapping("/page")
     @PreAuthorize("hasAuthority('system:user:list')")
@@ -111,6 +140,68 @@ public class UserController {
         update.setStatus(body.get("status"));
         userMapper.updateById(update);
         return Result.ok();
+    }
+
+    /** 上传头像: 登录用户可上传自己的头像 */
+    @PostMapping("/avatar")
+    @Transactional
+    public Result<Map<String, String>> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BizException("文件不能为空");
+        }
+        String original = file.getOriginalFilename();
+        if (original == null || original.isBlank()) {
+            throw new BizException("文件名非法");
+        }
+        String ext = "";
+        int dot = original.lastIndexOf('.');
+        if (dot > 0 && dot < original.length() - 1) {
+            ext = original.substring(dot + 1).toLowerCase();
+        }
+        // 头像只允许图片类型
+        Set<String> imageExts = Set.of("png", "jpg", "jpeg", "gif", "webp", "bmp");
+        if (ext.isEmpty() || !imageExts.contains(ext)) {
+            throw new BizException("头像只支持图片格式: png/jpg/jpeg/gif/webp/bmp");
+        }
+        String storedName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
+        try {
+            Files.copy(file.getInputStream(), uploadDir.resolve(storedName), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new BizException("文件保存失败: " + e.getMessage());
+        }
+        Long userId = SecurityUtil.getUserId();
+        SysUser loginUser = SecurityUtil.getLoginUser().getUser();
+        // 保存附件记录
+        SysAttachment att = new SysAttachment();
+        att.setObjectType("avatar");
+        att.setObjectId(userId);
+        att.setFileName(original);
+        att.setStoredName(storedName);
+        att.setFileExt(ext);
+        att.setFileSize(file.getSize());
+        att.setUploaderId(userId);
+        att.setUploaderName(loginUser.getRealName());
+        attachmentMapper.insert(att);
+        // 更新用户头像字段为附件下载URL
+        String avatarUrl = "/api/attachments/" + att.getId() + "/download";
+        SysUser update = new SysUser();
+        update.setId(userId);
+        update.setAvatar(avatarUrl);
+        userMapper.updateById(update);
+        // 更新SecurityContext中的用户信息
+        loginUser.setAvatar(avatarUrl);
+        return Result.ok(Map.of("avatar", avatarUrl));
+    }
+
+    /** 获取当前登录用户信息(含头像) */
+    @GetMapping("/me")
+    public Result<SysUser> me() {
+        Long userId = SecurityUtil.getUserId();
+        SysUser user = userMapper.selectById(userId);
+        if (user != null) {
+            user.setPassword(null);
+        }
+        return Result.ok(user);
     }
 
     private void saveUserRoles(Long userId, List<Long> roleIds) {

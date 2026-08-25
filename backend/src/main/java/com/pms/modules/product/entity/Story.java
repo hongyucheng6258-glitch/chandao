@@ -53,4 +53,8 @@ public class Story implements Serializable {
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedTime;
+
+    /** 非数据库字段: 所属迭代名称(用于列表展示) */
+    @TableField(exist = false)
+    private String sprintName;
 }

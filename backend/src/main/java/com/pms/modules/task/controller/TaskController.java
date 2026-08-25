@@ -75,6 +75,7 @@ public class TaskController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('task:assign')")
     @LogOperation(objectType = "task", action = "创建任务", objectId = "#result.data")
     public Result<Long> create(@RequestBody Task task) {
         task.setId(null);
@@ -86,6 +87,7 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('task:assign')")
     @LogOperation(objectType = "task", action = "编辑任务", objectId = "#id")
     public Result<Void> update(@PathVariable Long id, @RequestBody Task task) {
         task.setId(id);
@@ -254,6 +256,7 @@ public class TaskController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('task:assign')")
     public Result<Void> delete(@PathVariable Long id) {
         taskMapper.deleteById(id);
         return Result.ok();

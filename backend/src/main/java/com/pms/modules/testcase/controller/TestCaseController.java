@@ -29,6 +29,12 @@ public class TestCaseController {
         return Result.ok(testCaseMapper.selectPage(new Page<>(pageNum, pageSize), wrapper));
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('testcase:list')")
+    public Result<TestCase> detail(@PathVariable Long id) {
+        return Result.ok(testCaseMapper.selectById(id));
+    }
+
     @PostMapping
     @PreAuthorize("hasAuthority('testcase:list')")
     public Result<Long> create(@RequestBody TestCase testCase) {
