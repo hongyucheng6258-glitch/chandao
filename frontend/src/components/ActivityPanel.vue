@@ -100,23 +100,23 @@ onMounted(load)
 .activity-panel { display: flex; flex-direction: column; min-height: 240px; }
 .activity { padding: 8px 4px 0; max-height: 420px; overflow: auto; }
 .comment {
-  background: #f5f7fa;
-  border: 1px solid #ebeef5;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-light);
   border-radius: 8px;
   padding: 8px 10px;
 }
 .comment-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-.avatar { background: #e8f0fe; color: #2b6cb0; font-size: 13px; }
-.name { font-size: 13px; font-weight: 600; color: #303133; }
+.avatar { background: var(--accent-primary-bg); color: var(--surface-dark); font-size: 13px; }
+.name { font-size: 13px; font-weight: 650; color: var(--text-primary); }
 .del { margin-left: auto; }
 .comment-body {
-  font-size: 13px; color: #303133; white-space: pre-wrap; word-break: break-word; line-height: 1.5;
+  font-size: 13px; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; line-height: 1.5;
 }
 .event { display: flex; align-items: center; gap: 6px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: #c0c4cc; flex: none; }
-.event-text { font-size: 13px; color: #606266; }
+.event-text { font-size: 13px; color: var(--text-secondary); }
 .composer {
-  border-top: 1px solid #ebeef5; padding-top: 10px; margin-top: 8px;
+  border-top: 1px solid var(--border-light); padding-top: 10px; margin-top: 8px;
   display: flex; flex-direction: column; gap: 8px;
 }
 .composer .el-button { align-self: flex-end; }

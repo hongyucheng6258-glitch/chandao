@@ -160,15 +160,15 @@ onMounted(load)
 <style scoped>
 .attachment-list { display: flex; flex-direction: column; gap: 8px; }
 .att-head { display: flex; align-items: center; justify-content: space-between; }
-.att-title { font-size: 13px; font-weight: 600; color: #303133; }
+.att-title { font-size: 13px; font-weight: 650; color: var(--text-primary); }
 .att-items { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow: auto; }
 .att-item {
   display: flex; align-items: center; gap: 8px; padding: 6px 8px;
-  border: 1px solid #ebeef5; border-radius: 6px; margin-bottom: 6px; background: #fafafa;
+  border: 1px solid var(--border-light); border-radius: var(--radius-sm); margin-bottom: 6px; background: var(--surface-soft);
 }
-.att-icon { color: #409eff; flex: none; }
-.att-name { flex: 1; font-size: 13px; color: #303133; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.att-size { font-size: 12px; color: #909399; flex: none; }
-.att-meta { font-size: 12px; color: #c0c4cc; flex: none; }
+.att-icon { color: var(--accent-info); flex: none; }
+.att-name { flex: 1; font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.att-size { font-size: 12px; color: var(--text-secondary); flex: none; }
+.att-meta { font-size: 12px; color: var(--text-muted); flex: none; }
 .att-ops { flex: none; display: flex; gap: 2px; }
 </style>

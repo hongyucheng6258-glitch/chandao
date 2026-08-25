@@ -117,6 +117,6 @@ onMounted(async () => {
 
 <style scoped>
 .toolbar { display: flex; gap: 12px; margin-bottom: 12px; }
-.block-title { font-size: 14px; font-weight: 600; color: #303133; margin-bottom: 8px; }
+.block-title { font-size: 14px; font-weight: 650; color: var(--text-primary); margin-bottom: 8px; }
 .chart { height: 320px; }
 </style>

@@ -1,48 +1,56 @@
 <template>
-  <el-card>
-    <div class="toolbar">
+  <div class="board-page">
+    <div class="page-header">
+      <h2 class="page-title">迭代看板</h2>
+      <div class="page-actions">
+        <el-button type="primary" icon="Plus" :disabled="!sprintId" @click="openTaskDialog()">新建任务</el-button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
       <el-select v-model="projectId" placeholder="选择项目" style="width: 180px" @change="onProjectChange">
         <el-option v-for="p in projectOptions" :key="p.id" :label="p.name" :value="p.id" />
       </el-select>
       <el-select v-model="sprintId" placeholder="选择迭代" style="width: 180px" @change="loadBoard">
         <el-option v-for="s in sprintOptions" :key="s.id" :label="s.name" :value="s.id" />
       </el-select>
-      <el-button type="primary" icon="Plus" :disabled="!sprintId" @click="openTaskDialog()">新建任务</el-button>
     </div>
 
-    <el-row :gutter="12" v-if="sprintId">
-      <el-col :span="6" v-for="col in columns" :key="col.status">
-        <div class="board-col" :class="{ 'drag-over': dragOverStatus === col.status }">
-          <div class="board-col-header">
+    <div class="board-container" v-if="sprintId">
+      <div class="board-column" v-for="col in columns" :key="col.status" :class="{ 'drag-over': dragOverStatus === col.status }">
+        <div class="board-column-header">
+          <div class="board-column-title">
             <StatusTag :status="col.status" type="task" />
-            <span class="count">{{ tasksByStatus(col.status).length }}</span>
           </div>
-          <div class="board-col-body"
-               @dragover.prevent="onDragOver(col.status)"
-               @dragleave="onDragLeave(col.status)"
-               @drop="onDrop(col.status)">
-            <el-card v-for="task in tasksByStatus(col.status)" :key="task.id" shadow="hover" class="task-card"
-                     draggable="true" @dragstart="onDragStart(task)" @dragend="onDragEnd"
-                     @click="openTaskDrawer(task)">
-              <div class="task-name">{{ task.name }}</div>
-              <div class="task-meta">
-                <PriorityTag :level="task.priority" />
-                <span>{{ userName(task.assignedTo) }}</span>
-              </div>
-              <div class="task-hours">估 {{ task.estimate }}h / 耗 {{ task.consumed }}h / 剩 {{ task.left }}h</div>
-              <div class="task-actions" @click.stop>
-                <el-button v-if="task.status === 'wait' || task.status === 'pause'" link type="success" size="small" @click="flow(task, 'start')">开始</el-button>
-                <el-button v-if="task.status === 'doing'" link type="primary" size="small" @click="flow(task, 'finish')">完成</el-button>
-                <el-button v-if="task.status === 'doing'" link type="warning" size="small" @click="openHours(task)">工时</el-button>
-                <el-button v-if="task.status === 'done'" link type="info" size="small" @click="flow(task, 'close')">关闭</el-button>
-                <el-button v-perm="'task:assign'" link size="small" @click="openAssign(task)">指派</el-button>
-              </div>
-            </el-card>
-            <el-empty v-if="!tasksByStatus(col.status).length" description="无任务" :image-size="40" />
-          </div>
+          <span class="board-column-count">{{ tasksByStatus(col.status).length }}</span>
         </div>
-      </el-col>
-    </el-row>
+        <div class="board-column-body"
+             @dragover.prevent="onDragOver(col.status)"
+             @dragleave="onDragLeave(col.status)"
+             @drop="onDrop(col.status)">
+          <div v-for="task in tasksByStatus(col.status)" :key="task.id" class="board-card" :class="task.status"
+                   draggable="true" @dragstart="onDragStart(task)" @dragend="onDragEnd"
+                   @click="openTaskDrawer(task)">
+            <div class="board-card-title">{{ task.name }}</div>
+            <div class="board-card-meta">
+              <div class="board-card-tags">
+                <PriorityTag :level="task.priority" />
+              </div>
+              <span class="board-card-assignee">{{ userName(task.assignedTo) }}</span>
+            </div>
+            <div class="board-card-hours">估 {{ task.estimate }}h / 耗 {{ task.consumed }}h / 剩 {{ task.left }}h</div>
+            <div class="board-card-actions" @click.stop>
+              <el-button v-if="task.status === 'wait' || task.status === 'pause'" link type="success" size="small" @click="flow(task, 'start')">开始</el-button>
+              <el-button v-if="task.status === 'doing'" link type="primary" size="small" @click="flow(task, 'finish')">完成</el-button>
+              <el-button v-if="task.status === 'doing'" link type="warning" size="small" @click="openHours(task)">工时</el-button>
+              <el-button v-if="task.status === 'done'" link type="info" size="small" @click="flow(task, 'close')">关闭</el-button>
+              <el-button v-perm="'task:assign'" link size="small" @click="openAssign(task)">指派</el-button>
+            </div>
+          </div>
+          <el-empty v-if="!tasksByStatus(col.status).length" description="暂无任务" :image-size="40" />
+        </div>
+      </div>
+    </div>
     <el-empty v-else description="请先选择项目和迭代" />
 
     <el-dialog v-model="taskVisible" title="新建任务" width="520px">
@@ -110,7 +118,7 @@
         <ActivityPanel :key="'act' + currentTask.id" object-type="task" :object-id="currentTask.id" />
       </div>
     </el-drawer>
-  </el-card>
+  </div>
 </template>
 
 <script setup>
@@ -256,21 +264,137 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.toolbar { display: flex; gap: 12px; margin-bottom: 12px; }
+.board-page {
+  padding: 24px 28px;
+}
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.page-title {
+  font-family: Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.page-actions {
+  display: flex;
+  gap: 10px;
+}
+.filter-bar {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.board-container {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+}
+.board-column {
+  min-width: 280px;
+  flex: 1;
+  background: var(--surface-soft);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  transition: all 0.15s;
+}
+.board-column.drag-over {
+  outline: 2px dashed var(--accent-success);
+  outline-offset: -2px;
+  background: var(--accent-primary-bg);
+}
+.board-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 0 4px;
+}
+.board-column-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.board-column-count {
+  background: var(--bg-secondary);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.board-column-body {
+  min-height: 200px;
+}
+.board-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  cursor: grab;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
+.board-card:active {
+  cursor: grabbing;
+}
+.board-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.board-card.wait { border-left-color: var(--text-muted); }
+.board-card.doing { border-left-color: var(--accent-primary); }
+.board-card.done { border-left-color: var(--accent-success); }
+.board-card.pause { border-left-color: var(--accent-warning); }
+.board-card.cancel { border-left-color: var(--accent-danger); }
+.board-card.closed { border-left-color: var(--text-muted); }
+.board-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.board-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.board-card-tags {
+  display: flex;
+  gap: 6px;
+}
+.board-card-assignee {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.board-card-hours {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+.board-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
 .detail-wrap { padding: 2px 4px; }
-.section-title { font-size: 13px; font-weight: 600; color: #303133; margin: 4px 0 8px; }
-.biz-head { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid #ebeef5; }
-.biz-title { font-size: 14px; font-weight: 600; color: #303133; }
-.board-col { background: #f5f7fa; border-radius: 8px; min-height: 400px; transition: outline .15s; }
-.board-col.drag-over { outline: 2px dashed #409eff; outline-offset: -2px; background: #ecf5ff; }
-.task-card { margin-bottom: 8px; cursor: grab; }
-.task-card:active { cursor: grabbing; }
-.board-col-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; }
-.count { color: #909399; font-size: 13px; }
-.board-col-body { padding: 0 8px 8px; }
-.task-card { margin-bottom: 8px; }
-.task-name { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
-.task-meta { display: flex; justify-content: space-between; font-size: 12px; color: #909399; }
-.task-hours { font-size: 12px; color: #c0c4cc; margin-top: 4px; }
-.task-actions { margin-top: 4px; }
+.section-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 4px 0 8px; }
+.biz-head { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--border-light); }
+.biz-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 </style>

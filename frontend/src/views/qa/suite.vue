@@ -239,14 +239,14 @@ onMounted(async () => {
 
 <style scoped>
 .toolbar { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
-.tip { color: #909399; font-size: 12px; margin-top: 4px; }
+.tip { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
 .summary { display: flex; gap: 18px; text-align: center; }
 .stat { display: flex; flex-direction: column; min-width: 56px; }
-.stat .num { font-size: 22px; font-weight: 600; color: #303133; }
-.stat .lbl { font-size: 12px; color: #909399; margin-top: 2px; }
-.stat.pass .num { color: #67c23a; }
-.stat.fail .num { color: #f56c6c; }
-.stat.blocked .num { color: #e6a23c; }
-.stat.unexec .num { color: #909399; }
-.stat.rate .num { color: #409eff; }
+.stat .num { font-size: 22px; font-weight: 650; color: var(--text-primary); }
+.stat .lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.stat.pass .num { color: var(--accent-success); }
+.stat.fail .num { color: var(--accent-danger); }
+.stat.blocked .num { color: var(--accent-warning); }
+.stat.unexec .num { color: var(--text-muted); }
+.stat.rate .num { color: var(--accent-info); }
 </style>

@@ -1,53 +1,81 @@
 <template>
-  <el-card>
-    <div class="toolbar">
-      <el-select v-model="query.productId" placeholder="产品" clearable style="width: 160px" @change="load">
-        <el-option v-for="p in productOptions" :key="p.id" :label="p.name" :value="p.id" />
-      </el-select>
-      <el-select v-model="query.status" placeholder="状态" clearable style="width: 130px" @change="load">
-        <el-option v-for="(v, k) in statusMap" :key="k" :label="v" :value="k" />
-      </el-select>
-      <el-select v-model="query.priority" placeholder="优先级" clearable style="width: 110px" @change="load">
-        <el-option v-for="n in [1, 2, 3, 4]" :key="n" :label="'P' + n" :value="n" />
-      </el-select>
-      <el-input v-model="query.keyword" placeholder="需求标题" clearable style="width: 180px" @change="load" />
-      <el-button v-perm="'story:add'" type="primary" icon="Plus" @click="openDialog()">提需求</el-button>
-      <el-button v-perm="'story:add'" type="danger" :disabled="!selectedIds.length" @click="batchDelete">批量删除 ({{ selectedIds.length }})</el-button>
-      <el-button v-perm="'story:flow'" type="primary" :disabled="!selectedIds.length" @click="batchAssignVisible = true">批量指派</el-button>
+  <div class="story-page">
+    <div class="page-header">
+      <h2 class="page-title">需求管理</h2>
+      <div class="page-actions">
+        <el-button v-perm="'story:add'" type="primary" icon="Plus" @click="openDialog()">提需求</el-button>
+      </div>
     </div>
 
+    <div class="filter-bar">
+      <el-select v-model="query.productId" placeholder="产品" clearable style="width: 150px" @change="onProductChange">
+        <el-option v-for="p in productOptions" :key="p.id" :label="p.name" :value="p.id" />
+      </el-select>
+      <el-select v-model="query.projectId" placeholder="项目" clearable style="width: 170px" @change="onFilterProjectChange">
+        <el-option v-for="p in projectOptions" :key="p.id" :label="p.name" :value="p.id" />
+      </el-select>
+      <el-select v-model="query.sprintId" placeholder="迭代" clearable style="width: 160px" :disabled="!query.projectId" @change="load">
+        <el-option v-for="s in sprintFilterOptions" :key="s.id" :label="s.name" :value="s.id" />
+      </el-select>
+      <el-select v-model="query.status" placeholder="状态" clearable style="width: 110px" @change="load">
+        <el-option v-for="(v, k) in statusMap" :key="k" :label="v" :value="k" />
+      </el-select>
+      <el-select v-model="query.priority" placeholder="优先级" clearable style="width: 100px" @change="load">
+        <el-option v-for="n in [1, 2, 3, 4]" :key="n" :label="'P' + n" :value="n" />
+      </el-select>
+      <el-input v-model="query.keyword" placeholder="搜索需求标题" clearable style="width: 180px" @change="load" />
+      <div style="flex:1"></div>
+      <el-button v-perm="'story:add'" type="danger" plain :disabled="!selectedIds.length" @click="batchDelete">批量删除 ({{ selectedIds.length }})</el-button>
+      <el-button v-perm="'story:flow'" type="primary" plain :disabled="!selectedIds.length" @click="batchAssignVisible = true">批量指派</el-button>
+    </div>
+
+    <div class="data-table">
     <el-table :data="rows" v-loading="loading" @selection-change="onSelectionChange">
       <el-table-column type="selection" width="45" />
-      <el-table-column prop="id" label="ID" width="70" />
+      <el-table-column prop="id" label="ID" width="60" />
       <el-table-column prop="title" label="需求标题" show-overflow-tooltip />
-      <el-table-column label="优先级" width="80">
+      <el-table-column label="优先级" width="75">
         <template #default="{ row }"><PriorityTag :level="row.priority" /></template>
       </el-table-column>
-      <el-table-column label="状态" width="90">
+      <el-table-column label="状态" width="85">
         <template #default="{ row }"><StatusTag :status="row.status" type="story" /></template>
       </el-table-column>
-      <el-table-column prop="estimate" label="预估(h)" width="90" />
-      <el-table-column prop="assignedTo" label="指派给" width="100">
+      <el-table-column prop="sprintName" label="所属迭代" width="140" show-overflow-tooltip>
+        <template #default="{ row }">
+          <span v-if="row.sprintName" style="color:#409eff">{{ row.sprintName }}</span>
+          <span v-else style="color:#c0c4cc">未规划</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="estimate" label="预估(h)" width="80" />
+      <el-table-column prop="assignedTo" label="指派给" width="90">
         <template #default="{ row }">{{ userName(row.assignedTo) }}</template>
       </el-table-column>
-      <el-table-column prop="createdTime" label="创建时间" width="165" />
-      <el-table-column label="操作" width="260">
+      <el-table-column prop="createdTime" label="创建时间" width="155" />
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button v-perm="'story:flow'" v-if="row.status === 'draft' || row.status === 'changed' || row.status === 'closed'"
             link type="success" @click="flow(row, 'activate')">激活</el-button>
           <el-button v-perm="'story:flow'" v-if="row.status !== 'closed'" link type="warning" @click="flow(row, 'close')">关闭</el-button>
-          <el-button v-perm="'story:flow'" link type="primary" @click="openAssign(row)">指派</el-button>
-          <el-button v-perm="'story:add'" link type="success" @click="openSplit(row)">拆分任务</el-button>
-          <el-button link type="primary" @click="openActivity(row)">动态</el-button>
-          <el-button v-perm="'story:add'" link type="primary" @click="openDialog(row)">编辑</el-button>
-          <el-popconfirm title="确定删除？" @confirm="handleDelete(row)">
-            <template #reference><el-button v-perm="'story:add'" link type="danger">删除</el-button></template>
-          </el-popconfirm>
+          <el-button v-perm="'story:add'" link type="success" @click="openSplit(row)">拆分</el-button>
+          <el-dropdown trigger="click" @command="(cmd) => handleMore(cmd, row)">
+            <el-button link type="primary">更多<el-icon><ArrowDown /></el-icon></el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="assign" v-perm="'story:flow'">指派</el-dropdown-item>
+                <el-dropdown-item command="activity">动态</el-dropdown-item>
+                <el-dropdown-item command="edit" v-perm="'story:add'">编辑</el-dropdown-item>
+                <el-dropdown-item command="delete" v-perm="'story:add'" divided>删除</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination v-model:current-page="query.pageNum" v-model:page-size="query.pageSize"
-      :total="total" layout="total, prev, pager, next" style="margin-top: 12px" @current-change="load" />
+    </div>
+    <div class="pagination-wrapper">
+      <el-pagination v-model:current-page="query.pageNum" v-model:page-size="query.pageSize"
+        :total="total" layout="total, prev, pager, next, jumper" @current-change="load" />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="form.id ? '编辑需求' : '提需求'" width="560px">
       <el-form :model="form" label-width="90px">
@@ -139,12 +167,13 @@
         <ActivityPanel :key="'act' + activityBiz.id" object-type="story" :object-id="activityBiz.id" />
       </div>
     </el-drawer>
-  </el-card>
+  </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { ArrowDown } from '@element-plus/icons-vue'
 import { storyApi, productApi, userApi, projectApi, sprintApi } from '@/api'
 import StatusTag from '@/components/StatusTag.vue'
 import PriorityTag from '@/components/PriorityTag.vue'
@@ -155,7 +184,7 @@ const statusMap = { draft: '草稿', active: '已激活', changed: '已变更', 
 const rows = ref([])
 const total = ref(0)
 const loading = ref(false)
-const query = reactive({ pageNum: 1, pageSize: 10, productId: null, status: '', priority: null, keyword: '' })
+const query = reactive({ pageNum: 1, pageSize: 10, productId: null, projectId: null, sprintId: null, status: '', priority: null, keyword: '' })
 const dialogVisible = ref(false)
 const form = reactive({})
 const productOptions = ref([])
@@ -176,6 +205,34 @@ const allSprints = ref([])
 const sprintOptions = computed(() =>
   splitForm.projectId == null ? [] : (allSprints.value || []).filter((s) => s.projectId === splitForm.projectId)
 )
+const sprintFilterOptions = computed(() =>
+  query.projectId == null ? [] : (allSprints.value || []).filter((s) => s.projectId === query.projectId)
+)
+
+function onProductChange() {
+  // 切换产品时清空项目/迭代筛选
+  query.projectId = null
+  query.sprintId = null
+  load()
+}
+
+function onFilterProjectChange() {
+  // 切换项目筛选时清空迭代筛选
+  query.sprintId = null
+  load()
+}
+
+function handleMore(cmd, row) {
+  switch (cmd) {
+    case 'assign': openAssign(row); break
+    case 'activity': openActivity(row); break
+    case 'edit': openDialog(row); break
+    case 'delete':
+      ElMessageBox.confirm('确定删除该需求？', '提示', { type: 'warning' })
+        .then(() => handleDelete(row)).catch(() => {})
+      break
+  }
+}
 
 function onSelectionChange(rows) {
   selectedIds.value = rows.map((r) => r.id)
@@ -300,13 +357,57 @@ onMounted(async () => {
   productOptions.value = (await productApi.options()).data
   projectOptions.value = (await projectApi.options()).data
   userOptions.value = (await userApi.options()).data
+  allSprints.value = (await sprintApi.options()).data || []
 })
 </script>
 
 <style scoped>
-.toolbar { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.story-page {
+  padding: 24px 28px;
+}
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.page-title {
+  font-family: Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.page-actions {
+  display: flex;
+  gap: 10px;
+}
+.filter-bar {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.data-table {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
 .detail-wrap { padding: 2px 4px; }
-.section-title { font-size: 13px; font-weight: 600; color: #303133; margin: 4px 0 8px; }
-.biz-head { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid #ebeef5; }
-.biz-title { font-size: 14px; font-weight: 600; color: #303133; }
+.section-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 4px 0 8px; }
+.biz-head { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--border-light); }
+.biz-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 </style>

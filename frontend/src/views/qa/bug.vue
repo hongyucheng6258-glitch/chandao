@@ -305,7 +305,7 @@ onMounted(async () => {
 <style scoped>
 .toolbar { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .detail-wrap { padding: 2px 4px; }
-.section-title { font-size: 13px; font-weight: 600; color: #303133; margin: 4px 0 8px; }
-.biz-head { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid #ebeef5; }
-.biz-title { font-size: 14px; font-weight: 600; color: #303133; }
+.section-title { font-size: 13px; font-weight: 650; color: var(--text-primary); margin: 4px 0 8px; }
+.biz-head { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--border-light); }
+.biz-title { font-size: 14px; font-weight: 650; color: var(--text-primary); }
 </style>
